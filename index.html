@@ -296,6 +296,14 @@
                             </div>
                         </button>
                     </div>
+
+                    <!-- Botão do Som da Tela de Opções -->
+                    <div class="z-10 mt-4">
+                        <button onclick="toggleBgMusic()" class="glass-card flex items-center gap-2 text-xs font-bold transition-colors px-6 py-3 rounded-full border border-white/20 text-brand-orange hover:bg-brand-orange/20 shadow-lg">
+                            <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
+                            ${isMusicPlaying ? 'MUDO (MENU)' : 'TOCAR SOM (MENU)'}
+                        </button>
+                    </div>
                 </div>
             `;
         }
@@ -457,13 +465,28 @@
         // LÓGICA DE TRANSIÇÃO E VÍDEOS DE FUNDO
         // ==========================================
         function toggleBgMusic() {
-            if (!slideAudioPlayer || typeof slideAudioPlayer.isMuted !== 'function') return;
-            if (slideAudioPlayer.isMuted()) {
-                slideAudioPlayer.unMute();
-                isMusicPlaying = true;
+            if (currentMode === 'start' || currentMode === 'os') {
+                // Controla o vídeo das opções
+                if (!bgPlayer || typeof bgPlayer.isMuted !== 'function') return;
+                if (bgPlayer.isMuted()) {
+                    bgPlayer.unMute();
+                    bgPlayer.setVolume(100);
+                    isMusicPlaying = true;
+                } else {
+                    bgPlayer.mute();
+                    isMusicPlaying = false;
+                }
             } else {
-                slideAudioPlayer.mute();
-                isMusicPlaying = false;
+                // Controla a música dos slides
+                if (!slideAudioPlayer || typeof slideAudioPlayer.isMuted !== 'function') return;
+                if (slideAudioPlayer.isMuted()) {
+                    slideAudioPlayer.unMute();
+                    slideAudioPlayer.setVolume(100);
+                    isMusicPlaying = true;
+                } else {
+                    slideAudioPlayer.mute();
+                    isMusicPlaying = false;
+                }
             }
             render();
         }
@@ -484,8 +507,13 @@
                 if (slideVideoPlayer && slideVideoPlayer.pauseVideo) slideVideoPlayer.pauseVideo();
                 if (slideAudioPlayer && slideAudioPlayer.pauseVideo) slideAudioPlayer.pauseVideo();
                 
-                // Retoma vídeo 1 se tiver sido pausado
-                if (bgPlayer && bgPlayer.playVideo) bgPlayer.playVideo();
+                // Retoma vídeo 1 se tiver sido pausado e sincroniza o botão
+                if (bgPlayer && bgPlayer.playVideo) {
+                    bgPlayer.playVideo();
+                    if (typeof bgPlayer.isMuted === 'function') {
+                        isMusicPlaying = !bgPlayer.isMuted();
+                    }
+                }
 
             } else if (mode === 'intro' || mode === 'os-intro') {
                 v1.style.opacity = '0';
