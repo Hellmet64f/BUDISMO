@@ -73,7 +73,6 @@
             position: absolute;
             top: 50%; left: 50%;
             width: 100vw; height: 100vh;
-            /* Escala o vídeo para cobrir as bordas pretas */
             transform: translate(-50%, -50%) scale(1.8);
             pointer-events: none;
             border: none;
@@ -104,6 +103,15 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
         .glass-card:hover { background: rgba(20, 20, 20, 0.7); border-color: rgba(249, 115, 22, 0.5); }
+        
+        /* Estilo Glass mais limpo para o OS */
+        .os-glass {
+            background: rgba(20, 20, 30, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
 
         /* --- ANIMAÇÕES CONTROLADAS DA INTRO (ESTÚDIO) --- */
         .studio-letter { display: inline-block; opacity: 0; transform-origin: bottom center; }
@@ -121,6 +129,17 @@
         /* Barra Inferior Animada */
         #bottom-nav-bar { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
         #bottom-hover-trigger { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 25; }
+        
+        /* Microfone a ouvir */
+        .listening {
+            animation: pulse-red 1.5s infinite;
+            color: #ef4444 !important;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -146,8 +165,9 @@
         <div id="video-2-overlay" class="absolute inset-0 bg-black/40 transition-colors duration-1000"></div> 
     </div>
 
-    <!-- Camada Oculta: Música Exclusiva dos Slides -->
+    <!-- Camadas Ocultas: Áudio -->
     <div id="slide-audio-div" class="hidden"></div>
+    <div id="cr7-audio-div" class="hidden"></div> <!-- Reprodutor do Easter Egg -->
 
     <!-- APLICAÇÃO PRINCIPAL (UI SOBREPOSTA AOS VÍDEOS) -->
     <div id="app" class="w-full h-screen w-screen relative z-10 hidden"></div>
@@ -156,13 +176,12 @@
         // ==========================================
         // CONFIGURAÇÃO DO YOUTUBE API E CARREGAMENTO
         // ==========================================
-        let bgPlayer, slideVideoPlayer, slideAudioPlayer;
+        let bgPlayer, slideVideoPlayer, slideAudioPlayer, cr7AudioPlayer;
         let playersReadyCount = 0;
-        const TOTAL_PLAYERS = 3;
+        const TOTAL_PLAYERS = 4; // Agora são 4 players
         let isMusicPlaying = false;
         let forceStartTimeout;
         
-        // Carrega o script da API do YouTube
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -189,23 +208,29 @@
                 playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0, 'loop': 1, 'playlist': 'qgTEiSmve1Q' },
                 events: { 'onReady': onPlayerReady }
             });
+            
+            // Player 4: Easter Egg CR7
+            cr7AudioPlayer = new YT.Player('cr7-audio-div', {
+                videoId: 'MfmcpDbXp9w',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0 },
+                events: { 'onReady': onPlayerReady }
+            });
 
-            // FALLBACK ANTI-TRAVAMENTO: Se os vídeos demorarem mais de 8 segundos, força o início.
+            // FALLBACK ANTI-TRAVAMENTO
             forceStartTimeout = setTimeout(() => {
                 if(playersReadyCount < TOTAL_PLAYERS) forceStartApp();
             }, 8000);
         }
 
         function onPlayerReady(event) {
-            // Apenas os vídeos visuais recebem as classes de ajuste de tela
-            if (event.target !== slideAudioPlayer) {
+            if (event.target !== slideAudioPlayer && event.target !== cr7AudioPlayer) {
                 event.target.getIframe().classList.add('yt-bg-iframe');
             }
             
             playersReadyCount++;
             if (playersReadyCount === TOTAL_PLAYERS) {
-                clearTimeout(forceStartTimeout); // Cancela o fallback
-                bgPlayer.playVideo(); // Toca o fundo mudo da tela inicial
+                clearTimeout(forceStartTimeout);
+                bgPlayer.playVideo();
                 forceStartApp();
             }
         }
@@ -243,6 +268,88 @@
         const appDiv = document.getElementById('app');
 
         // ==========================================
+        // MOTOR DE PARTÍCULAS INTERATIVO (REAGE AO MOUSE)
+        // ==========================================
+        let particlesArray = [];
+        let animationFrameId;
+        let mouse = { x: null, y: null, radius: 100 };
+
+        window.addEventListener('mousemove', function(event) {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+
+        function initParticles(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particlesArray = [];
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.baseX = this.x;
+                    this.baseY = this.y;
+                    this.density = (Math.random() * 30) + 1;
+                    this.color = `rgba(249, 115, 22, ${Math.random() * 0.5 + 0.3})`;
+                }
+                update() {
+                    // Flutuação normal lenta
+                    this.y -= 0.5;
+                    if (this.y < 0) {
+                        this.y = canvas.height;
+                        this.x = Math.random() * canvas.width;
+                        this.baseX = this.x;
+                    }
+
+                    // Reação ao Mouse
+                    if(mouse.x != null && mouse.y != null) {
+                        let dx = mouse.x - this.x;
+                        let dy = mouse.y - this.y;
+                        let distance = Math.sqrt(dx * dx + dy * dy);
+                        let forceDirectionX = dx / distance;
+                        let forceDirectionY = dy / distance;
+                        let maxDistance = mouse.radius;
+                        let force = (maxDistance - distance) / maxDistance;
+                        let directionX = forceDirectionX * force * this.density;
+                        let directionY = forceDirectionY * force * this.density;
+
+                        if (distance < mouse.radius) {
+                            this.x -= directionX;
+                            this.y -= directionY;
+                        } else {
+                            // Retorna à posição original horizontalmente
+                            if (this.x !== this.baseX) {
+                                let dx = this.x - this.baseX;
+                                this.x -= dx / 20;
+                            }
+                        }
+                    }
+                }
+                draw() {
+                    ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            for (let i = 0; i < 150; i++) particlesArray.push(new Particle());
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particlesArray.length; i++) { particlesArray[i].update(); particlesArray[i].draw(); }
+                animationFrameId = requestAnimationFrame(animateParticles);
+            }
+            if(animationFrameId) cancelAnimationFrame(animationFrameId);
+            animateParticles();
+            
+            window.addEventListener('resize', () => {
+                if(canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            });
+        }
+
+        // ==========================================
         // UTILITÁRIOS
         // ==========================================
         function createStudioText(text) {
@@ -253,6 +360,105 @@
         }
 
         // ==========================================
+        // SISTEMA DE VOZ (EASTER EGG)
+        // ==========================================
+        let recognition;
+        let isListening = false;
+        
+        function initVoiceSystem() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'pt-PT';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript.toLowerCase();
+                    console.log("Comando de voz ouvido:", transcript);
+                    
+                    if (transcript.includes('cr7') || transcript.includes('r7') || transcript.includes('ronaldo') || transcript.includes('cristiano') || transcript.includes('robozão')) {
+                        tocarEasterEggCR7();
+                    }
+                };
+
+                recognition.onend = function() {
+                    isListening = false;
+                    updateMicIcon();
+                };
+                
+                recognition.onerror = function() {
+                    isListening = false;
+                    updateMicIcon();
+                }
+            }
+        }
+
+        function toggleVoiceCommand() {
+            if (!recognition) {
+                initVoiceSystem();
+                if(!recognition) {
+                    alert("Reconhecimento de voz não suportado neste navegador.");
+                    return;
+                }
+            }
+            
+            if (isListening) {
+                recognition.stop();
+                isListening = false;
+            } else {
+                try {
+                    recognition.start();
+                    isListening = true;
+                } catch(e) { console.error(e); }
+            }
+            updateMicIcon();
+        }
+
+        function updateMicIcon() {
+            const micIcon = document.getElementById('os-mic-icon');
+            if (micIcon) {
+                if (isListening) {
+                    micIcon.classList.add('listening');
+                } else {
+                    micIcon.classList.remove('listening');
+                }
+            }
+        }
+
+        function tocarEasterEggCR7() {
+            if (cr7AudioPlayer && typeof cr7AudioPlayer.playVideo === 'function') {
+                // Pausar outras músicas temporariamente
+                const wasPlayingBg = bgPlayer && typeof bgPlayer.getPlayerState === 'function' && bgPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+                const wasPlayingSlide = slideAudioPlayer && typeof slideAudioPlayer.getPlayerState === 'function' && slideAudioPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+                
+                if (wasPlayingBg) bgPlayer.pauseVideo();
+                if (wasPlayingSlide) slideAudioPlayer.pauseVideo();
+                
+                cr7AudioPlayer.seekTo(0);
+                cr7AudioPlayer.unMute();
+                cr7AudioPlayer.setVolume(100);
+                cr7AudioPlayer.playVideo();
+                
+                // Mostrar um aviso divertido
+                const osArea = document.getElementById('os-desktop-area');
+                if(osArea) {
+                    const div = document.createElement('div');
+                    div.className = "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100] text-6xl font-black text-white drop-shadow-[0_0_20px_rgba(249,115,22,1)] animate-[fadeUp_0.5s_ease-out]";
+                    div.innerHTML = "SIUUUUU!";
+                    osArea.appendChild(div);
+                    setTimeout(() => div.remove(), 4000);
+                }
+                
+                // Retomar música após 8 segundos (duração aproximada do áudio)
+                setTimeout(() => {
+                    if (wasPlayingBg && currentMode === 'os') bgPlayer.playVideo();
+                    if (wasPlayingSlide && (currentMode === 'normal' || currentMode === 'os-presentation')) slideAudioPlayer.playVideo();
+                }, 8000);
+            }
+        }
+
+        // ==========================================
         // RENDERIZADORES HTML
         // ==========================================
         function render() {
@@ -260,6 +466,7 @@
                 appDiv.innerHTML = renderStartScreen();
             } else if (currentMode === 'os') {
                 appDiv.innerHTML = renderOSDesktop();
+                initParticles('os-particles'); // Partículas ativas no OS!
             } else if (currentMode === 'intro' || currentMode === 'os-intro') {
                 const container = currentMode === 'intro' ? appDiv : document.getElementById('browser-content');
                 container.innerHTML = renderStudioIntro();
@@ -268,6 +475,7 @@
                 container.innerHTML = renderPresentationUI();
                 attachPresentationEvents();
                 triggerSlideAnimations();
+                if(currentMode === 'normal') initParticles('particles-canvas'); // Mantém se for fullscreen
                 if (activeSlideIndex === 6) initChart();
             }
         }
@@ -297,7 +505,6 @@
                         </button>
                     </div>
 
-                    <!-- Botão do Som da Tela de Opções -->
                     <div class="z-10 mt-4">
                         <button onclick="toggleBgMusic()" class="glass-card flex items-center gap-2 text-xs font-bold transition-colors px-6 py-3 rounded-full border border-white/20 text-brand-orange hover:bg-brand-orange/20 shadow-lg">
                             <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
@@ -310,7 +517,7 @@
 
         function renderStudioIntro() {
             return `
-                <div class="w-full h-full bg-transparent flex flex-col items-center justify-center z-50 overflow-hidden relative">
+                <div class="w-full h-full bg-black/90 flex flex-col items-center justify-center z-50 overflow-hidden relative backdrop-blur-md">
                     <div class="text-center z-10" id="intro-content-wrapper" style="opacity: 0; transition: opacity 0.5s;">
                         <p class="text-brand-orange font-bold tracking-[0.4em] text-sm md:text-base mb-8 studio-fade drop-shadow-md">DESENVOLVIDO POR</p>
                         <div class="font-montserrat text-xl md:text-4xl font-bold tracking-wider text-white mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
@@ -325,44 +532,73 @@
         }
 
         function renderOSDesktop() {
+            // Se o browser estiver aberto, mantemos ele aberto no re-render
+            const isBrowserOpen = document.getElementById('browser-window') && !document.getElementById('browser-window').classList.contains('hidden');
+            
             return `
-                <div class="w-full h-full bg-transparent relative flex flex-col font-inter z-20">
-                    <div class="flex-1 p-4 flex flex-col gap-6 items-start">
-                        <div onclick="openOSBrowser()" class="flex flex-col items-center gap-1 cursor-pointer glass-card p-3 rounded-lg w-24 text-center group">
-                            <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center drop-shadow-xl group-hover:scale-110 transition-transform">
-                                <i class="fa-brands fa-google text-blue-500 text-2xl"></i>
+                <div id="os-desktop-area" class="w-full h-full bg-transparent relative flex flex-col font-inter z-20">
+                    
+                    <!-- Fundo Animado do OS -->
+                    <canvas id="os-particles" class="absolute inset-0 pointer-events-none z-0"></canvas>
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-black/60 pointer-events-none z-0"></div>
+
+                    <!-- Ícones do Desktop -->
+                    <div class="flex-1 p-6 flex flex-col gap-6 items-start z-10">
+                        <div onclick="openOSBrowser()" class="flex flex-col items-center gap-2 cursor-pointer os-glass p-4 rounded-xl w-28 text-center group hover:bg-white/10 transition-all border border-white/10 hover:border-brand-orange/40">
+                            <div class="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform backdrop-blur-sm">
+                                <i class="fa-brands fa-chrome text-white text-3xl"></i>
                             </div>
-                            <span class="text-xs font-semibold drop-shadow-md mt-2 text-white">Navegador</span>
+                            <span class="text-xs font-semibold text-white drop-shadow-md tracking-wide">Navegador</span>
                         </div>
                     </div>
                     
-                    <div class="h-12 glass-card rounded-none border-x-0 border-b-0 border-t border-white/20 flex items-center px-4 justify-between z-40 text-white">
-                        <i class="fa-brands fa-windows text-xl hover:text-brand-orange cursor-pointer"></i>
-                        <span id="os-clock" class="text-sm font-medium">12:00</span>
+                    <!-- Barra de Tarefas (OS Glass) -->
+                    <div class="h-14 os-glass rounded-none border-x-0 border-b-0 border-t border-white/10 flex items-center px-6 justify-between z-40 text-white">
+                        <div class="flex items-center gap-6">
+                            <i class="fa-brands fa-windows text-2xl hover:text-brand-orange cursor-pointer transition-colors" title="Iniciar" onclick="setMode('start')"></i>
+                            
+                            <!-- Search Bar Style -->
+                            <div class="hidden md:flex items-center bg-black/40 rounded-full px-4 py-1.5 border border-white/5">
+                                <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs"></i>
+                                <span class="text-xs text-gray-400 ml-3">Procurar aplicativos...</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-5">
+                            <!-- Ícone do Easter Egg (Microfone) -->
+                            <i id="os-mic-icon" class="fa-solid fa-microphone text-gray-300 hover:text-white cursor-pointer transition-all ${isListening ? 'listening' : ''}" title="Assistente de Voz (Diga CR7)" onclick="toggleVoiceCommand()"></i>
+                            <i class="fa-solid fa-wifi text-gray-300"></i>
+                            <span id="os-clock" class="text-sm font-semibold tracking-wide ml-2">12:00</span>
+                        </div>
                     </div>
 
-                    <div id="browser-window" class="hidden absolute top-[5%] left-[5%] md:left-[10%] w-[90%] md:w-[80%] h-[85%] bg-white rounded-lg flex-col overflow-hidden z-50 flex shadow-2xl border border-gray-400">
-                        <div class="h-10 bg-gray-200 flex items-center px-4 justify-between border-b border-gray-300">
+                    <!-- Janela do Browser -->
+                    <div id="browser-window" class="${isBrowserOpen ? '' : 'hidden'} absolute top-[5%] left-[5%] md:left-[10%] w-[90%] md:w-[80%] h-[85%] bg-white rounded-xl flex-col overflow-hidden z-50 flex shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-gray-600">
+                        <!-- Top Bar do Browser -->
+                        <div class="h-12 bg-gray-100 flex items-center px-4 justify-between border-b border-gray-300">
                             <div class="flex gap-2">
-                                <div onclick="closeOSBrowser()" class="w-3 h-3 rounded-full bg-red-500 cursor-pointer shadow-inner"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-500 cursor-pointer shadow-inner"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-500 cursor-pointer shadow-inner"></div>
+                                <div onclick="closeOSBrowser()" class="w-3.5 h-3.5 rounded-full bg-red-500 cursor-pointer hover:bg-red-600 shadow-inner"></div>
+                                <div class="w-3.5 h-3.5 rounded-full bg-yellow-500 cursor-pointer shadow-inner"></div>
+                                <div class="w-3.5 h-3.5 rounded-full bg-green-500 cursor-pointer shadow-inner"></div>
                             </div>
-                            <div class="flex-1 mx-4">
-                                <div class="bg-white rounded-md px-3 py-1 text-xs text-gray-600 flex items-center gap-2 border border-gray-300 shadow-inner max-w-lg mx-auto">
-                                    <i class="fa-solid fa-lock text-gray-400"></i>
-                                    <span class="flex-1 text-center" id="url-bar">google.com</span>
+                            <div class="flex-1 mx-6">
+                                <div class="bg-white rounded-lg px-4 py-1.5 text-xs text-gray-600 flex items-center gap-3 border border-gray-300 shadow-inner max-w-2xl mx-auto">
+                                    <i class="fa-solid fa-shield-halved text-green-600"></i>
+                                    <span class="flex-1" id="url-bar">https://google.com</span>
                                 </div>
                             </div>
                         </div>
-                        <div id="browser-content" class="flex-1 relative bg-white flex flex-col items-center justify-center">
+                        
+                        <!-- Conteúdo do Browser -->
+                        <div id="browser-content" class="flex-1 relative bg-white flex flex-col items-center justify-center overflow-hidden">
                             <div id="google-search-screen" class="flex flex-col items-center w-full max-w-2xl px-6">
-                                <h1 class="text-6xl font-bold mb-8 tracking-tighter" style="color: #4285F4;">
+                                <h1 class="text-7xl font-bold mb-8 tracking-tighter" style="color: #4285F4;">
                                     G<span style="color: #EA4335">o</span><span style="color: #FBBC05">o</span>g<span style="color: #34A853">l</span><span style="color: #EA4335">e</span>
                                 </h1>
-                                <div class="w-full flex items-center border border-gray-300 hover:shadow-md rounded-full px-5 py-3 transition cursor-text" onclick="startGoogleSearch()">
-                                    <i class="fa-solid fa-search text-gray-400"></i>
-                                    <input id="search-input" type="text" class="flex-1 outline-none ml-3 text-black text-lg cursor-pointer bg-transparent" placeholder="Clique para pesquisar..." readonly>
+                                <div class="w-full flex items-center border border-gray-300 hover:shadow-lg rounded-full px-6 py-4 transition-shadow cursor-text" onclick="startGoogleSearch()">
+                                    <i class="fa-solid fa-magnifying-glass text-gray-400"></i>
+                                    <input id="search-input" type="text" class="flex-1 outline-none ml-3 text-black text-lg cursor-pointer bg-transparent" placeholder="Pesquise sobre Budismo..." readonly>
+                                    <i class="fa-solid fa-microphone text-blue-500 cursor-pointer text-lg"></i>
                                 </div>
                             </div>
                         </div>
@@ -406,6 +642,7 @@
 
             return `
                 <div class="w-full h-full bg-transparent flex flex-col relative overflow-hidden z-10 text-white backdrop-blur-[2px]">
+                    <canvas id="particles-canvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
                     
                     <header class="flex justify-between items-center p-6 md:px-12 md:py-8 z-20">
                         <div class="font-montserrat font-black text-xl tracking-widest cursor-pointer hover:text-brand-orange transition drop-shadow-xl" onclick="setMode('start')">
@@ -413,7 +650,7 @@
                         </div>
                         <div class="flex items-center gap-4">
                             <button onclick="toggleBgMusic()" class="glass-card flex items-center gap-2 text-xs font-bold transition-colors px-4 py-2 rounded-full border border-white/20 text-brand-orange hover:bg-brand-orange/20 shadow-lg">
-                                <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
+                                <i class="fa-solid ${isMusicPlaying ? 'fa-pause' : 'fa-play'}"></i> 
                                 ${isMusicPlaying ? 'MUTAR MÚSICA' : 'TOCAR MÚSICA'}
                             </button>
                             <div class="text-brand-orange text-xs font-bold glass-card px-4 py-2 rounded-full border border-brand-orange/30 hidden md:block shadow-lg">
@@ -466,7 +703,6 @@
         // ==========================================
         function toggleBgMusic() {
             if (currentMode === 'start' || currentMode === 'os') {
-                // Controla o vídeo das opções
                 if (!bgPlayer || typeof bgPlayer.isMuted !== 'function') return;
                 if (bgPlayer.isMuted()) {
                     bgPlayer.unMute();
@@ -477,7 +713,6 @@
                     isMusicPlaying = false;
                 }
             } else {
-                // Controla a música dos slides
                 if (!slideAudioPlayer || typeof slideAudioPlayer.isMuted !== 'function') return;
                 if (slideAudioPlayer.isMuted()) {
                     slideAudioPlayer.unMute();
@@ -499,7 +734,6 @@
             const v2 = document.getElementById('video-layer-2');
             const overlay2 = document.getElementById('video-2-overlay');
 
-            // Gestão das Camadas de Vídeo e Áudio
             if (mode === 'start' || mode === 'os') {
                 v1.style.opacity = '1';
                 v2.style.opacity = '0';
@@ -507,7 +741,6 @@
                 if (slideVideoPlayer && slideVideoPlayer.pauseVideo) slideVideoPlayer.pauseVideo();
                 if (slideAudioPlayer && slideAudioPlayer.pauseVideo) slideAudioPlayer.pauseVideo();
                 
-                // Retoma vídeo 1 se tiver sido pausado e sincroniza o botão
                 if (bgPlayer && bgPlayer.playVideo) {
                     bgPlayer.playVideo();
                     if (typeof bgPlayer.isMuted === 'function') {
@@ -518,12 +751,12 @@
             } else if (mode === 'intro' || mode === 'os-intro') {
                 v1.style.opacity = '0';
                 v2.style.opacity = '1';
-                overlay2.className = "absolute inset-0 bg-black/30 transition-colors duration-1000"; // Claro na intro
+                overlay2.className = "absolute inset-0 bg-black/40 transition-colors duration-1000"; 
 
             } else if (mode === 'normal' || mode === 'os-presentation') {
                 v1.style.opacity = '0';
                 v2.style.opacity = '1';
-                overlay2.className = "absolute inset-0 bg-black/75 transition-colors duration-1000"; // Escuro nos slides
+                overlay2.className = "absolute inset-0 bg-black/80 transition-colors duration-1000"; 
             }
 
             render();
@@ -531,17 +764,14 @@
         }
 
         function playIntro(targetMode) {
-            // Pára o vídeo inicial
             if (bgPlayer && bgPlayer.pauseVideo) bgPlayer.pauseVideo();
             
-            // Inicia o NOVO vídeo de fundo (sem som)
             if (slideVideoPlayer && slideVideoPlayer.playVideo) {
                 slideVideoPlayer.seekTo(0);
-                slideVideoPlayer.mute(); // Garante o mudo
+                slideVideoPlayer.mute(); 
                 slideVideoPlayer.playVideo();
             }
 
-            // Inicia a NOVA música (com som)
             if (slideAudioPlayer && slideAudioPlayer.playVideo) {
                 slideAudioPlayer.seekTo(0);
                 slideAudioPlayer.unMute();
@@ -550,7 +780,6 @@
                 isMusicPlaying = true;
             }
 
-            // Altera o layout para a Intro
             setMode(targetMode === 'os-presentation' ? 'os-intro' : 'intro');
 
             let animationStarted = false;
@@ -569,7 +798,6 @@
                     setTimeout(() => { letter.classList.add('drop-anim'); }, 800 + (index * 50)); 
                 });
 
-                // Fim da Intro -> Vai para os Slides
                 setTimeout(() => {
                     setMode(targetMode);
                 }, 5500);
