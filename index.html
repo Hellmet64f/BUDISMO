@@ -73,7 +73,7 @@
             position: absolute;
             top: 50%; left: 50%;
             width: 100vw; height: 100vh;
-            /* Escala o vídeo muito além dos limites para esconder controlos e barras pretas */
+            /* Escala o vídeo para cobrir as bordas pretas */
             transform: translate(-50%, -50%) scale(1.8);
             pointer-events: none;
             border: none;
@@ -96,14 +96,14 @@
 
         /* Estilo Glassmorphism (Vidro Fosco) */
         .glass-card {
-            background: rgba(10, 10, 10, 0.4);
+            background: rgba(10, 10, 10, 0.5);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
-        .glass-card:hover { background: rgba(20, 20, 20, 0.6); border-color: rgba(249, 115, 22, 0.5); }
+        .glass-card:hover { background: rgba(20, 20, 20, 0.7); border-color: rgba(249, 115, 22, 0.5); }
 
         /* --- ANIMAÇÕES CONTROLADAS DA INTRO (ESTÚDIO) --- */
         .studio-letter { display: inline-block; opacity: 0; transform-origin: bottom center; }
@@ -129,22 +129,25 @@
     <div id="loading-screen">
         <div class="spinner mb-6"></div>
         <h2 class="font-montserrat font-bold text-xl tracking-widest animate-pulse">A INICIALIZAR EXPERIÊNCIA...</h2>
-        <p class="text-gray-500 text-sm mt-2">A carregar conteúdos multimédia.</p>
+        <p class="text-gray-500 text-sm mt-2">A sincronizar áudio e vídeo de alta qualidade.</p>
     </div>
 
-    <!-- CAMADAS DE VÍDEO DE FUNDO -->
+    <!-- CAMADAS DE VÍDEO E ÁUDIO DE FUNDO -->
     
-    <!-- Camada 1: Vídeo das Opções (Short) -->
+    <!-- Camada 1: Vídeo das Opções (Sempre Mudo) -->
     <div id="video-layer-1" class="video-layer opacity-100">
         <div id="bg-player-div"></div>
         <div class="absolute inset-0 bg-black/50"></div> <!-- Escurece para leitura -->
     </div>
 
-    <!-- Camada 2: Vídeo da Intro e Apresentação (God of War) -->
+    <!-- Camada 2: Vídeo dos Slides (Sempre Mudo) -->
     <div id="video-layer-2" class="video-layer opacity-0">
-        <div id="intro-player-div"></div>
-        <div id="video-2-overlay" class="absolute inset-0 bg-black/40 transition-colors duration-1000"></div> <!-- Fica mais escuro nos slides -->
+        <div id="slide-video-div"></div>
+        <div id="video-2-overlay" class="absolute inset-0 bg-black/40 transition-colors duration-1000"></div> 
     </div>
+
+    <!-- Camada Oculta: Música Exclusiva dos Slides -->
+    <div id="slide-audio-div" class="hidden"></div>
 
     <!-- APLICAÇÃO PRINCIPAL (UI SOBREPOSTA AOS VÍDEOS) -->
     <div id="app" class="w-full h-screen w-screen relative z-10 hidden"></div>
@@ -153,8 +156,9 @@
         // ==========================================
         // CONFIGURAÇÃO DO YOUTUBE API E CARREGAMENTO
         // ==========================================
-        let bgPlayer, introPlayer;
+        let bgPlayer, slideVideoPlayer, slideAudioPlayer;
         let playersReadyCount = 0;
+        const TOTAL_PLAYERS = 3;
         let isMusicPlaying = false;
         let forceStartTimeout;
         
@@ -165,33 +169,43 @@
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
         function onYouTubeIframeAPIReady() {
-            // Player 1: Fundo de Opções (Short)
+            // Player 1: Fundo de Opções (Short, Mudo)
             bgPlayer = new YT.Player('bg-player-div', {
                 videoId: 's7i98_DeB04',
                 playerVars: { 'autoplay': 1, 'controls': 0, 'loop': 1, 'playlist': 's7i98_DeB04', 'mute': 1, 'disablekb': 1, 'showinfo': 0, 'rel': 0 },
                 events: { 'onReady': onPlayerReady }
             });
 
-            // Player 2: Intro/Slides (God of War)
-            introPlayer = new YT.Player('intro-player-div', {
-                videoId: 'x0-xFqvJ-U8',
-                playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0, 'loop': 1, 'playlist': 'x0-xFqvJ-U8' },
+            // Player 2: Vídeo de Fundo dos Slides (Novo Vídeo, Mudo)
+            slideVideoPlayer = new YT.Player('slide-video-div', {
+                videoId: 'nVKK-WVW2uw',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0, 'loop': 1, 'playlist': 'nVKK-WVW2uw', 'mute': 1 },
                 events: { 'onReady': onPlayerReady }
             });
 
-            // FALLBACK ANTI-TRAVAMENTO: Se os vídeos demorarem mais de 6 segundos, força o início.
+            // Player 3: Música dos Slides (Nova Música, Com Som)
+            slideAudioPlayer = new YT.Player('slide-audio-div', {
+                videoId: 'qgTEiSmve1Q',
+                playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0, 'loop': 1, 'playlist': 'qgTEiSmve1Q' },
+                events: { 'onReady': onPlayerReady }
+            });
+
+            // FALLBACK ANTI-TRAVAMENTO: Se os vídeos demorarem mais de 8 segundos, força o início.
             forceStartTimeout = setTimeout(() => {
-                if(playersReadyCount < 2) forceStartApp();
-            }, 6000);
+                if(playersReadyCount < TOTAL_PLAYERS) forceStartApp();
+            }, 8000);
         }
 
         function onPlayerReady(event) {
-            event.target.getIframe().classList.add('yt-bg-iframe');
-            playersReadyCount++;
+            // Apenas os vídeos visuais recebem as classes de ajuste de tela
+            if (event.target !== slideAudioPlayer) {
+                event.target.getIframe().classList.add('yt-bg-iframe');
+            }
             
-            if (playersReadyCount === 2) {
+            playersReadyCount++;
+            if (playersReadyCount === TOTAL_PLAYERS) {
                 clearTimeout(forceStartTimeout); // Cancela o fallback
-                bgPlayer.playVideo(); // Toca o fundo mudo
+                bgPlayer.playVideo(); // Toca o fundo mudo da tela inicial
                 forceStartApp();
             }
         }
@@ -383,13 +397,20 @@
             });
 
             return `
-                <div class="w-full h-full bg-transparent flex flex-col relative overflow-hidden z-10 text-white">
+                <div class="w-full h-full bg-transparent flex flex-col relative overflow-hidden z-10 text-white backdrop-blur-[2px]">
+                    
                     <header class="flex justify-between items-center p-6 md:px-12 md:py-8 z-20">
                         <div class="font-montserrat font-black text-xl tracking-widest cursor-pointer hover:text-brand-orange transition drop-shadow-xl" onclick="setMode('start')">
                             DHARMA<span class="text-brand-orange">.</span>
                         </div>
-                        <div class="text-brand-orange text-xs font-bold glass-card px-4 py-2 rounded-full border border-brand-orange/30 hidden md:block shadow-lg">
-                            USE W A S D PARA NAVEGAR
+                        <div class="flex items-center gap-4">
+                            <button onclick="toggleBgMusic()" class="glass-card flex items-center gap-2 text-xs font-bold transition-colors px-4 py-2 rounded-full border border-white/20 text-brand-orange hover:bg-brand-orange/20 shadow-lg">
+                                <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
+                                ${isMusicPlaying ? 'MUTAR MÚSICA' : 'TOCAR MÚSICA'}
+                            </button>
+                            <div class="text-brand-orange text-xs font-bold glass-card px-4 py-2 rounded-full border border-brand-orange/30 hidden md:block shadow-lg">
+                                USE W A S D PARA NAVEGAR
+                            </div>
                         </div>
                     </header>
 
@@ -435,6 +456,18 @@
         // ==========================================
         // LÓGICA DE TRANSIÇÃO E VÍDEOS DE FUNDO
         // ==========================================
+        function toggleBgMusic() {
+            if (!slideAudioPlayer || typeof slideAudioPlayer.isMuted !== 'function') return;
+            if (slideAudioPlayer.isMuted()) {
+                slideAudioPlayer.unMute();
+                isMusicPlaying = true;
+            } else {
+                slideAudioPlayer.mute();
+                isMusicPlaying = false;
+            }
+            render();
+        }
+
         function setMode(mode) {
             currentMode = mode;
             if (mode === 'start' || mode === 'os') activeSlideIndex = 0;
@@ -443,20 +476,26 @@
             const v2 = document.getElementById('video-layer-2');
             const overlay2 = document.getElementById('video-2-overlay');
 
-            // Gestão das Camadas de Vídeo de Fundo
+            // Gestão das Camadas de Vídeo e Áudio
             if (mode === 'start' || mode === 'os') {
                 v1.style.opacity = '1';
                 v2.style.opacity = '0';
-                if(introPlayer && introPlayer.pauseVideo) introPlayer.pauseVideo();
+                
+                if (slideVideoPlayer && slideVideoPlayer.pauseVideo) slideVideoPlayer.pauseVideo();
+                if (slideAudioPlayer && slideAudioPlayer.pauseVideo) slideAudioPlayer.pauseVideo();
+                
+                // Retoma vídeo 1 se tiver sido pausado
+                if (bgPlayer && bgPlayer.playVideo) bgPlayer.playVideo();
+
             } else if (mode === 'intro' || mode === 'os-intro') {
                 v1.style.opacity = '0';
                 v2.style.opacity = '1';
-                overlay2.className = "absolute inset-0 bg-black/30 transition-colors duration-1000"; // Mais claro para a intro épica
+                overlay2.className = "absolute inset-0 bg-black/30 transition-colors duration-1000"; // Claro na intro
+
             } else if (mode === 'normal' || mode === 'os-presentation') {
                 v1.style.opacity = '0';
                 v2.style.opacity = '1';
-                // Escurece um pouco o vídeo 2 (God of War) para os slides ficarem legíveis
-                overlay2.className = "absolute inset-0 bg-black/75 transition-colors duration-1000";
+                overlay2.className = "absolute inset-0 bg-black/75 transition-colors duration-1000"; // Escuro nos slides
             }
 
             render();
@@ -464,15 +503,23 @@
         }
 
         function playIntro(targetMode) {
-            // Pausa música inicial
+            // Pára o vídeo inicial
             if (bgPlayer && bgPlayer.pauseVideo) bgPlayer.pauseVideo();
             
-            // Inicia o vídeo épico de fundo
-            if (introPlayer && introPlayer.playVideo) {
-                introPlayer.seekTo(0);
-                introPlayer.unMute();
-                introPlayer.setVolume(100);
-                introPlayer.playVideo();
+            // Inicia o NOVO vídeo de fundo (sem som)
+            if (slideVideoPlayer && slideVideoPlayer.playVideo) {
+                slideVideoPlayer.seekTo(0);
+                slideVideoPlayer.mute(); // Garante o mudo
+                slideVideoPlayer.playVideo();
+            }
+
+            // Inicia a NOVA música (com som)
+            if (slideAudioPlayer && slideAudioPlayer.playVideo) {
+                slideAudioPlayer.seekTo(0);
+                slideAudioPlayer.unMute();
+                slideAudioPlayer.setVolume(100);
+                slideAudioPlayer.playVideo();
+                isMusicPlaying = true;
             }
 
             // Altera o layout para a Intro
@@ -494,7 +541,7 @@
                     setTimeout(() => { letter.classList.add('drop-anim'); }, 800 + (index * 50)); 
                 });
 
-                // Fim da Intro -> Vai para os Slides (O vídeo God of War continua no fundo)
+                // Fim da Intro -> Vai para os Slides
                 setTimeout(() => {
                     setMode(targetMode);
                 }, 5500);
@@ -556,7 +603,6 @@
                     setTimeout(() => { 
                         const urlBar = document.getElementById('url-bar'); 
                         if(urlBar) urlBar.innerText = "dharma.app/apresentacao"; 
-                        // Aqui faz o browser ficar fundo preto para a Intro do God of War entrar
                         document.getElementById('browser-content').style.backgroundColor = "black";
                         playIntro('os-presentation'); 
                     }, 600);
