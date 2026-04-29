@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apresentação: Budismo</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Inter:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        inter: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            orange: '#f97316',
+                            amber: '#f59e0b',
+                            dark: '#050505',
+                            darker: '#000000',
+                            glass: 'rgba(255, 255, 255, 0.05)'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Scrollbar customizada */
+        .custom-scrollbar::-webkit-scrollbar { height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.5); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(249,115,22,1); }
+
+        /* Animações da Apresentação */
+        .slide-enter {
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0; transform: translateY(40px);
+        }
+        .img-enter {
+            animation: fadeLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0; transform: translateX(60px);
+        }
+        .float-anim {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeLeft { to { opacity: 1; transform: translateX(0); } }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Efeito Arco de Luz */
+        .glow-arc {
+            position: absolute; right: -10vw; top: 50%; transform: translateY(-50%);
+            width: 40vw; height: 90vh;
+            border-left: 1px solid rgba(249, 115, 22, 0.2);
+            border-radius: 50%; pointer-events: none; z-index: 0;
+            box-shadow: -20px 0 50px rgba(249,115,22,0.05);
+        }
+
+        /* Estilo Glassmorphism (Vidro) */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(249, 115, 22, 0.5);
+        }
+
+        /* --- ANIMAÇÕES CONTROLADAS DA INTRO (ESTÚDIO) --- */
+        .studio-letter {
+            display: inline-block;
+            opacity: 0;
+            transform-origin: bottom center;
+        }
+        .studio-letter.drop-anim {
+            animation: dropBounce 1.2s cubic-bezier(0.28, 0.84, 0.42, 1) forwards;
+        }
+        @keyframes dropBounce {
+            0% { transform: translateY(-300px) scaleY(1.5) rotate(15deg); opacity: 0; filter: blur(5px); }
+            50% { transform: translateY(10px) scaleY(0.8) rotate(-5deg); opacity: 1; filter: blur(0px); }
+            70% { transform: translateY(-5px) scaleY(1.05) rotate(2deg); }
+            100% { transform: translateY(0) scaleY(1) rotate(0deg); opacity: 1; }
+        }
+        
+        .studio-fade { opacity: 0; }
+        .studio-fade.fade-anim { animation: fadeUp 1s ease forwards; }
+
+        /* OS Mode */
+        .os-bg { background: url('https://images.unsplash.com/photo-1506744012022-2b62d3a04297?auto=format&fit=crop&q=80') no-repeat center center/cover; }
+        .os-window { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); transition: all 0.3s ease; }
+        .image-mask {
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 75%, rgba(0,0,0,0) 100%);
+        }
+
+        /* Barra Inferior Animada */
+        #bottom-nav-bar { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        #bottom-hover-trigger { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 25; }
+    </style>
+</head>
+<body>
+
+    <!-- Reprodutores Ocultos do YouTube -->
+    <div id="yt-players" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;">
+        <div id="bg-player-div"></div>
+        <div id="intro-player-div"></div>
+    </div>
+
+    <!-- Aplicação Principal -->
+    <div id="app" class="w-full h-screen w-screen relative bg-brand-darker"></div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO YOUTUBE API E ÁUDIO
+        // ==========================================
+        let bgPlayer, introPlayer;
+        let ytApiReady = false;
+        let isMusicPlaying = false;
+
+        function onYouTubeIframeAPIReady() {
+            ytApiReady = true;
+            
+            // Música de Fundo (YouTube Short)
+            bgPlayer = new YT.Player('bg-player-div', {
+                height: '10', width: '10',
+                videoId: 's7i98_DeB04', // ID do Short
+                playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': 's7i98_DeB04' }
+            });
+
+            // Música da Intro (God of War)
+            introPlayer = new YT.Player('intro-player-div', {
+                height: '10', width: '10',
+                videoId: 'x0-xFqvJ-U8', // ID da Música
+                playerVars: { 'autoplay': 0, 'controls': 0 }
+            });
+        }
+
+        function toggleBgMusic() {
+            if (!ytApiReady || !bgPlayer || typeof bgPlayer.getPlayerState !== 'function') return;
+            
+            const state = bgPlayer.getPlayerState();
+            if (state === YT.PlayerState.PLAYING) {
+                bgPlayer.pauseVideo();
+                isMusicPlaying = false;
+            } else {
+                bgPlayer.playVideo();
+                isMusicPlaying = true;
+            }
+            render(); // Atualiza o ícone do botão
+        }
+
+        // ==========================================
+        // DADOS E CONFIGURAÇÕES
+        // ==========================================
+        const emails = [
+            "miguel-rmontana@estudante.rs.gov.br", 
+            "gabriel-efdslopes@estudante.rs.gov.br"
+        ];
+
+        const slidesData = [
+            {
+                id: 1, title: "O BUDISMO.", subtitle: "O CAMINHO DO MEIO",
+                description: "O Budismo é uma filosofia, doutrina ética e religião não-teísta que surgiu na Índia antiga. Baseia-se nos ensinamentos de Siddhartha Gautama, o Buda. Foca na transformação pessoal.",
+                stats: [{ label: "Paz Interior", value: 95 }, { label: "Compaixão", value: 90 }, { label: "Atenção", value: 98 }],
+                image: "https://images.unsplash.com/photo-1584286595398-a59f21d313f5?auto=format&fit=crop&q=80",
+                navTitle: "INTRO", navSub: "O QUE É"
+            },
+            {
+                id: 2, title: "SIDDHARTHA.", subtitle: "A HISTÓRIA DO PRÍNCIPE",
+                description: "Siddhartha Gautama era um príncipe que vivia protegido. Ao sair do palácio, deparou-se com as 'Quatro Visões'. Renunciou à riqueza e, após meditar sob a árvore Bodhi, alcançou a iluminação.",
+                stats: [{ label: "Renúncia", value: 100 }, { label: "Resiliência", value: 95 }, { label: "Iluminação", value: 100 }],
+                image: "https://images.unsplash.com/photo-1599009434802-ca1dd09895e7?auto=format&fit=crop&q=80",
+                navTitle: "A ORIGEM", navSub: "O BUDA"
+            },
+            {
+                id: 3, title: "AS 4 VERDADES.", subtitle: "O FUNDAMENTO",
+                description: "1) A vida inclui insatisfação. 2) A causa é o apego. 3) Existe um fim para o sofrimento (Nirvana). 4) O caminho é o Nobre Caminho Óctuplo (sabedoria e disciplina).",
+                stats: [{ label: "Aceitação", value: 92 }, { label: "Lógica", value: 88 }, { label: "Ética", value: 96 }],
+                image: "https://images.unsplash.com/photo-1517584318721-e0e643c16266?auto=format&fit=crop&q=80",
+                navTitle: "VERDADES", navSub: "DOUTRINA"
+            },
+            {
+                id: 4, title: "MEDITAÇÃO.", subtitle: "A PRÁTICA DO DESPERTAR",
+                description: "Ferramenta central para cultivar atenção. Práticas como Vipassana ajudam a observar a impermanência. O objetivo não é esvaziar a mente, mas observar sem apego.",
+                stats: [{ label: "Foco", value: 98 }, { label: "Respiração", value: 95 }, { label: "Calma", value: 90 }],
+                image: "https://images.unsplash.com/photo-1545389336-eaeecece96ef?auto=format&fit=crop&q=80",
+                navTitle: "PRÁTICA", navSub: "MEDITAÇÃO"
+            },
+            {
+                id: 5, title: "CIDADES.", subtitle: "GEOGRAFIA SAGRADA",
+                description: "As principais cidades de peregrinação são: Lumbini (nascimento), Bodh Gaya (iluminação), Sarnath (primeiro sermão) e Kushinagar (Parinirvana).",
+                stats: [{ label: "Bodh Gaya", value: 100 }, { label: "Lumbini", value: 90 }, { label: "Sarnath", value: 85 }],
+                image: "https://images.unsplash.com/photo-1605647540924-852290f6b0d5?auto=format&fit=crop&q=80",
+                navTitle: "GEOGRAFIA", navSub: "LOCAIS"
+            },
+            {
+                id: 6, title: "ESCOLAS.", subtitle: "VERTENTES E EXPANSÃO",
+                description: "O Budismo dividiu-se em veículos: Theravada (Anciãos, sudeste asiático), Mahayana (Grande Veículo, leste asiático, inclui o Zen) e Vajrayana (Veículo do Diamante).",
+                stats: [{ label: "Theravada", value: 80 }, { label: "Mahayana", value: 95 }, { label: "Vajrayana", value: 70 }],
+                image: "https://images.unsplash.com/photo-1551445496-613d78bdcb82?auto=format&fit=crop&q=80",
+                navTitle: "VERTENTES", navSub: "ESCOLAS"
+            },
+            {
+                id: 7, title: "DEMOGRAFIA.", subtitle: "NO MUNDO",
+                description: "Quarta maior religião do mundo (+500 milhões de adeptos). A grande maioria vive na Ásia-Pacífico. No Ocidente, cresce através da meditação secular.",
+                stats: [{ label: "Ásia", value: 98 }, { label: "Américas", value: 10 }, { label: "Europa", value: 5 }],
+                image: "none", 
+                navTitle: "GRÁFICOS", navSub: "ESTATÍSTICAS"
+            }
+        ];
+
+        let currentMode = 'start'; 
+        let activeSlideIndex = 0;
+        let chartInstance = null;
+        let bottomBarTimeout = null;
+        let particlesArray = [];
+        let animationFrameId;
+
+        const appDiv = document.getElementById('app');
+
+        // ==========================================
+        // MOTOR DE PARTÍCULAS
+        // ==========================================
+        function initParticles(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particlesArray = [];
+
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2.5 + 0.5;
+                    this.speedX = Math.random() * 1 - 0.5;
+                    this.speedY = Math.random() * -1.5 - 0.5;
+                    this.color = `rgba(249, 115, 22, ${Math.random() * 0.5 + 0.1})`;
+                }
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+                    if (this.y < 0) {
+                        this.y = canvas.height;
+                        this.x = Math.random() * canvas.width;
+                    }
+                }
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            for (let i = 0; i < 80; i++) particlesArray.push(new Particle());
+
+            function animateParticles() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                    particlesArray[i].draw();
+                }
+                animationFrameId = requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+
+            window.addEventListener('resize', () => {
+                if(canvas) { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            });
+        }
+
+        // ==========================================
+        // TEXTO ANIMADO
+        // ==========================================
+        function createStudioText(text) {
+            return text.split('').map((char) => {
+                if (char === ' ') return '&nbsp;';
+                return `<span class="studio-letter">${char}</span>`;
+            }).join('');
+        }
+
+        // ==========================================
+        // RENDERIZADORES HTML
+        // ==========================================
+
+        function render() {
+            if (currentMode === 'start') {
+                appDiv.innerHTML = renderStartScreen();
+            } else if (currentMode === 'os') {
+                appDiv.innerHTML = renderOSDesktop();
+            } else if (currentMode === 'intro' || currentMode === 'os-intro') {
+                const container = currentMode === 'intro' ? appDiv : document.getElementById('browser-content');
+                container.innerHTML = renderStudioIntro();
+            } else if (currentMode === 'normal' || currentMode === 'os-presentation') {
+                const container = currentMode === 'normal' ? appDiv : document.getElementById('browser-content');
+                container.innerHTML = renderPresentationUI();
+                attachPresentationEvents();
+                triggerSlideAnimations();
+                initParticles('particles-canvas');
+                if (activeSlideIndex === 6) initChart();
+            }
+        }
+
+        // --- TELA INICIAL ---
+        function renderStartScreen() {
+            return `
+                <div class="flex flex-col items-center justify-center w-full h-full bg-brand-darker relative overflow-hidden">
+                    <div class="absolute w-[800px] h-[800px] bg-brand-orange/10 rounded-full blur-[100px] pointer-events-none"></div>
+                    
+                    <h1 class="text-6xl md:text-8xl font-montserrat font-black mb-4 z-10 text-center tracking-tighter">BUDISMO<span class="text-brand-orange">.</span></h1>
+                    <p class="text-gray-400 mb-12 z-10 text-center max-w-lg text-lg">Selecione uma experiência visual.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 z-10 mb-8">
+                        <button onclick="playIntro('normal')" class="glass-card group relative px-8 py-5 rounded-xl transition-all duration-300 flex items-center gap-4 w-72">
+                            <i class="fa-solid fa-play text-2xl group-hover:text-white text-brand-orange"></i>
+                            <div class="text-left">
+                                <h3 class="font-bold text-lg">Apresentação</h3>
+                                <p class="text-xs text-gray-400 group-hover:text-gray-200">Tela cheia cinemática</p>
+                            </div>
+                        </button>
+                        <button onclick="setMode('os')" class="glass-card group relative px-8 py-5 rounded-xl transition-all duration-300 flex items-center gap-4 w-72">
+                            <i class="fa-brands fa-windows text-2xl group-hover:text-white text-brand-orange"></i>
+                            <div class="text-left">
+                                <h3 class="font-bold text-lg">Sistema OS</h3>
+                                <p class="text-xs text-gray-400 group-hover:text-gray-200">Simulador Interativo</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Toggle Música na Tela Inicial -->
+                    <button onclick="toggleBgMusic()" class="z-10 flex items-center gap-2 text-sm text-gray-400 hover:text-brand-orange transition-colors bg-white/5 px-4 py-2 rounded-full border border-white/10 hover:border-brand-orange/50">
+                        <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
+                        ${isMusicPlaying ? 'Pausar Música de Fundo' : 'Tocar Música de Fundo (Short)'}
+                    </button>
+                </div>
+            `;
+        }
+
+        // --- TELA DE INTRODUÇÃO (ESTÚDIO) ---
+        function renderStudioIntro() {
+            return `
+                <div class="w-full h-full bg-black flex flex-col items-center justify-center z-50 overflow-hidden relative">
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[200px] bg-brand-orange/20 blur-[80px] rounded-full"></div>
+                    
+                    <div class="text-center z-10" id="intro-content-wrapper" style="opacity: 0; transition: opacity 0.5s;">
+                        <p class="text-brand-orange font-bold tracking-[0.4em] text-sm mb-8 studio-fade">DESENVOLVIDO POR</p>
+                        
+                        <div class="font-montserrat text-xl md:text-3xl font-bold tracking-wider text-white mb-4 emails-line">
+                            ${createStudioText(emails[0])}
+                        </div>
+                        
+                        <div class="font-montserrat text-xl md:text-3xl font-bold tracking-wider text-white emails-line">
+                            ${createStudioText(emails[1])}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- SISTEMA OPERACIONAL ---
+        function renderOSDesktop() {
+            return `
+                <div class="w-full h-full os-bg relative flex flex-col font-inter">
+                    <div class="flex-1 p-4 flex flex-col gap-6 items-start">
+                        <div onclick="openOSBrowser()" class="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/10 p-2 rounded w-20 text-center group">
+                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center drop-shadow-md group-hover:scale-110 transition-transform">
+                                <i class="fa-brands fa-google text-blue-500 text-xl"></i>
+                            </div>
+                            <span class="text-xs font-semibold drop-shadow-md mt-1 text-white">Browser</span>
+                        </div>
+                    </div>
+                    
+                    <div class="h-12 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center px-4 justify-between z-40 text-white">
+                        <i class="fa-brands fa-windows text-xl hover:text-brand-orange cursor-pointer"></i>
+                        <span id="os-clock" class="text-sm font-medium">12:00</span>
+                    </div>
+
+                    <div id="browser-window" class="hidden absolute top-[5%] left-[5%] md:left-[10%] w-[90%] md:w-[80%] h-[85%] bg-white rounded-lg os-window flex-col overflow-hidden z-50 flex shadow-2xl border border-gray-400">
+                        <div class="h-10 bg-gray-200 flex items-center px-4 justify-between border-b border-gray-300">
+                            <div class="flex gap-2">
+                                <div onclick="closeOSBrowser()" class="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500 cursor-pointer"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500 cursor-pointer"></div>
+                            </div>
+                            <div class="flex-1 mx-4">
+                                <div class="bg-white rounded-md px-3 py-1 text-xs text-gray-600 flex items-center gap-2 border border-gray-300 shadow-inner max-w-lg mx-auto">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                    <span class="flex-1 text-center" id="url-bar">google.com</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="browser-content" class="flex-1 relative bg-white flex flex-col items-center justify-center">
+                            <div id="google-search-screen" class="flex flex-col items-center w-full max-w-2xl px-6">
+                                <h1 class="text-6xl font-bold mb-8 tracking-tighter" style="color: #4285F4;">
+                                    G<span style="color: #EA4335">o</span><span style="color: #FBBC05">o</span>g<span style="color: #34A853">l</span><span style="color: #EA4335">e</span>
+                                </h1>
+                                <div class="w-full flex items-center border border-gray-300 hover:shadow-md rounded-full px-5 py-3 transition cursor-text" onclick="startGoogleSearch()">
+                                    <i class="fa-solid fa-search text-gray-400"></i>
+                                    <input id="search-input" type="text" class="flex-1 outline-none ml-3 text-black text-lg cursor-pointer bg-transparent" placeholder="Clique para pesquisar..." readonly>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- MODO APRESENTAÇÃO ---
+        function renderPresentationUI() {
+            const slide = slidesData[activeSlideIndex];
+            
+            let statsHTML = '';
+            slide.stats.forEach(stat => {
+                statsHTML += `
+                    <div class="flex items-center gap-4 text-xs md:text-sm mb-3">
+                        <span class="w-24 text-gray-400 font-medium">${stat.label}</span>
+                        <div class="h-1 flex-1 bg-gray-800 rounded-full overflow-hidden max-w-[200px]">
+                            <div class="h-full bg-gradient-to-r from-brand-orange to-brand-amber relative rounded-full" style="width: ${stat.value}%"></div>
+                        </div>
+                        <span class="text-brand-orange font-bold text-xs">${stat.value}%</span>
+                    </div>
+                `;
+            });
+
+            let cardsHTML = '';
+            slidesData.forEach((item, index) => {
+                const isChart = item.id === 7;
+                const imgSrc = isChart ? 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200' : item.image;
+                const activeStyle = index === activeSlideIndex ? 'border-brand-orange shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'border-transparent hover:border-gray-500';
+
+                cardsHTML += `
+                    <div onclick="changeSlide(${index})" class="glass-card rounded-2xl flex p-2 min-w-[260px] md:min-w-[300px] cursor-pointer transition-all duration-300 border-2 ${activeStyle}">
+                        <img src="${imgSrc}" class="w-16 h-20 md:h-24 object-cover rounded-xl shrink-0 opacity-90">
+                        <div class="ml-4 flex flex-col justify-center flex-1">
+                            <h4 class="font-bold text-sm uppercase text-white">${item.navTitle}</h4>
+                            <span class="text-brand-orange text-[10px] font-bold tracking-widest mt-1">${item.navSub}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            return `
+                <div class="w-full h-full bg-brand-dark flex flex-col relative overflow-hidden z-10 text-white">
+                    <canvas id="particles-canvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
+                    
+                    <header class="flex justify-between items-center p-6 md:px-12 md:py-8 z-20">
+                        <div class="font-montserrat font-black text-xl tracking-widest cursor-pointer hover:text-brand-orange transition" onclick="setMode('start')">
+                            DHARMA<span class="text-brand-orange">.</span>
+                        </div>
+                        
+                        <!-- Toggle de Música na Apresentação -->
+                        <div class="flex items-center gap-6">
+                            <button onclick="toggleBgMusic()" class="hidden md:flex items-center gap-2 text-xs font-bold bg-brand-orange/10 hover:bg-brand-orange/30 transition-colors px-4 py-2 rounded-full border border-brand-orange/30 text-brand-orange">
+                                <i class="fa-solid ${isMusicPlaying ? 'fa-pause' : 'fa-play'}"></i> 
+                                ${isMusicPlaying ? 'PAUSAR SOM' : 'TOCAR SOM'}
+                            </button>
+                            <div class="text-brand-orange text-xs font-bold bg-brand-orange/10 px-3 py-1 rounded border border-brand-orange/20">
+                                USE W A S D PARA NAVEGAR
+                            </div>
+                        </div>
+                    </header>
+
+                    <main class="flex-1 flex flex-col md:flex-row relative z-10 px-6 md:px-12 pb-[100px]">
+                        <div class="flex-1 flex flex-col justify-center md:pr-12 relative z-20">
+                            <div id="anim-text" class="slide-enter">
+                                <h1 class="font-montserrat font-black text-5xl md:text-6xl lg:text-7xl leading-[0.9] mb-4 tracking-tighter drop-shadow-lg">
+                                    ${slide.title.replace('.', '<span class="text-brand-orange drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]">.</span>')}
+                                </h1>
+                                <h2 class="text-brand-orange font-bold tracking-[0.2em] uppercase text-xs md:text-sm mb-6 bg-brand-orange/10 inline-block px-3 py-1 rounded">
+                                    ${slide.subtitle}
+                                </h2>
+                                <p class="text-gray-300 text-sm md:text-base leading-relaxed max-w-lg mb-8 font-light drop-shadow-md">
+                                    ${slide.description}
+                                </p>
+                                <div class="w-full max-w-sm h-px bg-gradient-to-r from-brand-orange/50 to-transparent mb-6"></div>
+                                <div class="stats-container">${statsHTML}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 relative hidden md:flex items-center justify-center">
+                            <div class="glow-arc"></div>
+                            <div id="anim-img" class="img-enter float-anim w-full h-[65vh] relative z-10 flex items-center justify-center">
+                                ${slide.id === 7 
+                                    ? `<div class="w-full max-w-md glass-card p-6 rounded-2xl border border-white/10 shadow-2xl"><canvas id="buddhismChart"></canvas></div>` 
+                                    : `<img src="${slide.image}" class="h-full w-auto object-cover object-center image-mask drop-shadow-[0_0_30px_rgba(249,115,22,0.15)] rounded-2xl">`
+                                }
+                            </div>
+                        </div>
+                    </main>
+
+                    <div id="bottom-hover-trigger" onmouseenter="showBottomBar()" onmouseleave="hideBottomBarAfterDelay()"></div>
+                    <div id="bottom-nav-bar" class="absolute bottom-6 md:bottom-8 left-0 w-full px-6 md:px-12 z-30 translate-y-[150%]">
+                        <div class="flex gap-4 md:gap-6 overflow-x-auto pb-4 custom-scrollbar items-end" onmouseenter="clearBottomBarTimeout()" onmouseleave="hideBottomBarAfterDelay()">
+                            ${cardsHTML}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // LÓGICA DE INTRODUÇÃO SEGURA E SEM TRAVAMENTOS
+        // ==========================================
+
+        function setMode(mode) {
+            currentMode = mode;
+            if (mode === 'normal' || mode === 'os') activeSlideIndex = 0;
+            render();
+            if (mode === 'os') startClock();
+        }
+
+        function playIntro(targetMode) {
+            currentMode = targetMode === 'os-presentation' ? 'os-intro' : 'intro';
+            render();
+
+            let animationStarted = false;
+
+            // Função que coordena a animação da intro
+            const triggerIntroAnimations = () => {
+                if (animationStarted) return;
+                animationStarted = true;
+
+                const wrapper = document.getElementById('intro-content-wrapper');
+                if (wrapper) wrapper.style.opacity = '1';
+
+                const fadeEl = document.querySelector('.studio-fade');
+                if (fadeEl) fadeEl.classList.add('fade-anim');
+
+                // Anima as letras em sequência simulando batidas de música
+                const letters = document.querySelectorAll('.studio-letter');
+                letters.forEach((letter, index) => {
+                    setTimeout(() => {
+                        letter.classList.add('drop-anim');
+                    }, 800 + (index * 40)); 
+                });
+
+                // Avança para o modo final após 5.5s (independente do YouTube)
+                setTimeout(() => {
+                    if (introPlayer && typeof introPlayer.pauseVideo === 'function') {
+                        introPlayer.pauseVideo();
+                    }
+                    setMode(targetMode);
+                }, 5500);
+            };
+
+            // Tenta tocar o vídeo do YouTube da intro
+            if (ytApiReady && introPlayer && typeof introPlayer.playVideo === 'function') {
+                introPlayer.seekTo(0);
+                introPlayer.playVideo();
+                // Aciona animações sincronizadas com a música
+                setTimeout(triggerIntroAnimations, 500);
+            } else {
+                // FALLBACK: Se o YT falhar/bloquear, roda a animação perfeitamente mesmo assim
+                setTimeout(triggerIntroAnimations, 100);
+            }
+        }
+
+        function changeSlide(index) {
+            if (activeSlideIndex === index) return;
+            activeSlideIndex = index;
+            render();
+            showBottomBarTemporarily();
+        }
+
+        function triggerSlideAnimations() {
+            const textAnim = document.getElementById('anim-text');
+            const imgAnim = document.getElementById('anim-img');
+            if (textAnim) { textAnim.classList.remove('slide-enter'); void textAnim.offsetWidth; textAnim.classList.add('slide-enter'); }
+            if (imgAnim) { imgAnim.classList.remove('img-enter'); void imgAnim.offsetWidth; imgAnim.classList.add('img-enter'); }
+        }
+
+        // --- Controles da Barra ---
+        function showBottomBar() {
+            const bar = document.getElementById('bottom-nav-bar');
+            if (bar) bar.classList.remove('translate-y-[150%]');
+        }
+        function hideBottomBar() {
+            const bar = document.getElementById('bottom-nav-bar');
+            if (bar) bar.classList.add('translate-y-[150%]');
+        }
+        function clearBottomBarTimeout() {
+            if (bottomBarTimeout) clearTimeout(bottomBarTimeout);
+        }
+        function hideBottomBarAfterDelay() {
+            clearBottomBarTimeout();
+            bottomBarTimeout = setTimeout(hideBottomBar, 2500);
+        }
+        function showBottomBarTemporarily() {
+            showBottomBar();
+            hideBottomBarAfterDelay();
+        }
+
+        // --- Eventos de Teclado ---
+        function attachPresentationEvents() {
+            document.onkeydown = function(e) {
+                if (!currentMode.includes('normal') && !currentMode.includes('os-presentation')) return;
+                const key = e.key.toLowerCase();
+                if (key === 'arrowright' || key === 'd' || key === 'w' || key === 'arrowup') {
+                    changeSlide((activeSlideIndex + 1) % slidesData.length);
+                } else if (key === 'arrowleft' || key === 'a' || key === 's' || key === 'arrowdown') {
+                    changeSlide((activeSlideIndex - 1 + slidesData.length) % slidesData.length);
+                }
+            };
+        }
+
+        // --- OS MODO LOGIC ---
+        let clockInterval;
+        function startClock() {
+            clearInterval(clockInterval);
+            const updateTime = () => {
+                const el = document.getElementById('os-clock');
+                if(el) el.innerText = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+            };
+            updateTime();
+            clockInterval = setInterval(updateTime, 60000);
+        }
+
+        function openOSBrowser() {
+            const win = document.getElementById('browser-window');
+            if (win) win.classList.remove('hidden');
+        }
+
+        function closeOSBrowser() {
+            const win = document.getElementById('browser-window');
+            if (win) {
+                win.classList.add('hidden');
+                isSearching = false;
+                setTimeout(() => { if(currentMode === 'os-presentation' || currentMode === 'os-intro') setMode('os'); }, 300);
+            }
+        }
+
+        let isSearching = false;
+        function startGoogleSearch() {
+            if (isSearching) return; 
+            const input = document.getElementById('search-input');
+            if (!input) return;
+            isSearching = true;
+            const textToType = "Apresentação sobre Budismo";
+            let i = 0; input.value = "";
+            const typeInterval = setInterval(() => {
+                input.value += textToType.charAt(i);
+                i++;
+                if (i >= textToType.length) {
+                    clearInterval(typeInterval);
+                    setTimeout(() => {
+                        const urlBar = document.getElementById('url-bar');
+                        if(urlBar) urlBar.innerText = "dharma.app/apresentacao";
+                        playIntro('os-presentation');
+                    }, 600);
+                }
+            }, 50);
+        }
+
+        // --- Chart.js ---
+        function initChart() {
+            const ctx = document.getElementById('buddhismChart');
+            if (!ctx) return;
+            if (chartInstance) chartInstance.destroy();
+
+            Chart.defaults.color = '#fff';
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ásia-Pacífico', 'Américas', 'Europa'],
+                    datasets: [{
+                        data: [85, 10, 5],
+                        backgroundColor: ['#f97316', '#fb923c', '#fdba74'],
+                        borderWidth: 0, hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 13 } } },
+                        title: { display: true, text: 'Distribuição Demográfica', font: { family: 'Montserrat', size: 16 } }
+                    },
+                    cutout: '75%'
+                }
+            });
+        }
+
+        window.onload = () => setMode('start');
+
+    </script>
+</body>
+</html>
