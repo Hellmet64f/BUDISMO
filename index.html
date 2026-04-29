@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,6 +43,22 @@
             color: #ffffff;
             font-family: 'Inter', sans-serif;
             overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- VÍDEOS DE FUNDO DO YOUTUBE --- */
+        .yt-bg-iframe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 56.25vw; /* Ratio 16:9 */
+            min-height: 100vh;
+            min-width: 177.77vh; /* Ratio 16:9 */
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            border: none;
         }
 
         /* Scrollbar customizada */
@@ -72,25 +88,17 @@
             100% { transform: translateY(0px); }
         }
 
-        /* Efeito Arco de Luz */
-        .glow-arc {
-            position: absolute; right: -10vw; top: 50%; transform: translateY(-50%);
-            width: 40vw; height: 90vh;
-            border-left: 1px solid rgba(249, 115, 22, 0.2);
-            border-radius: 50%; pointer-events: none; z-index: 0;
-            box-shadow: -20px 0 50px rgba(249,115,22,0.05);
-        }
-
-        /* Estilo Glassmorphism (Vidro) */
+        /* Estilo Glassmorphism (Vidro Fosco) */
         .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: white;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
         }
         .glass-card:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.1);
             border-color: rgba(249, 115, 22, 0.5);
         }
 
@@ -107,7 +115,7 @@
             0% { transform: translateY(-300px) scaleY(1.5) rotate(15deg); opacity: 0; filter: blur(5px); }
             50% { transform: translateY(10px) scaleY(0.8) rotate(-5deg); opacity: 1; filter: blur(0px); }
             70% { transform: translateY(-5px) scaleY(1.05) rotate(2deg); }
-            100% { transform: translateY(0) scaleY(1) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(0) scaleY(1) rotate(0deg); opacity: 1; text-shadow: 0 0 20px rgba(255,255,255,0.8); }
         }
         
         .studio-fade { opacity: 0; }
@@ -128,14 +136,23 @@
 </head>
 <body>
 
-    <!-- Reprodutores Ocultos do YouTube -->
-    <div id="yt-players" style="position: absolute; top: -9999px; left: -9999px; width: 0; height: 0; overflow: hidden;">
-        <div id="bg-player-div"></div>
-        <div id="intro-player-div"></div>
+    <!-- VÍDEO DE FUNDO GLOBAL (O Short nas opções) -->
+    <div id="video-bg-container" class="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-40 mix-blend-screen transition-opacity duration-1000">
+        <div id="bg-player-div" class="yt-bg-iframe"></div>
+    </div>
+    
+    <!-- Filtro escuro para garantir leitura -->
+    <div class="fixed inset-0 z-0 pointer-events-none bg-gradient-to-b from-black/80 via-black/50 to-black/90"></div>
+
+    <!-- VÍDEO DA INTRODUÇÃO (God of War) -->
+    <div id="intro-video-container" class="fixed inset-0 z-40 overflow-hidden pointer-events-none opacity-0 transition-opacity duration-1000 hidden bg-black">
+        <div id="intro-player-div" class="yt-bg-iframe"></div>
+        <!-- Vinheta escura por cima do vídeo épico -->
+        <div class="absolute inset-0 bg-black/60 shadow-[inset_0_0_150px_rgba(0,0,0,1)]"></div>
     </div>
 
-    <!-- Aplicação Principal -->
-    <div id="app" class="w-full h-screen w-screen relative bg-brand-darker"></div>
+    <!-- APLICAÇÃO PRINCIPAL -->
+    <div id="app" class="w-full h-screen w-screen relative z-10"></div>
 
     <script>
         // ==========================================
@@ -148,37 +165,42 @@
         function onYouTubeIframeAPIReady() {
             ytApiReady = true;
             
-            // Música de Fundo (YouTube Short)
+            // Fundo de Ecrã Visual e Música (YouTube Short)
             bgPlayer = new YT.Player('bg-player-div', {
-                height: '10', width: '10',
                 videoId: 's7i98_DeB04', // ID do Short
-                playerVars: { 'autoplay': 0, 'controls': 0, 'loop': 1, 'playlist': 's7i98_DeB04' }
+                playerVars: { 
+                    'autoplay': 1, 'controls': 0, 'loop': 1, 
+                    'playlist': 's7i98_DeB04', 'mute': 1, 'disablekb': 1, 'showinfo': 0, 'rel': 0 
+                },
+                events: {
+                    'onReady': (event) => { event.target.playVideo(); } // Força o play visual
+                }
             });
 
-            // Música da Intro (God of War)
+            // Vídeo Épico da Intro (God of War)
             introPlayer = new YT.Player('intro-player-div', {
-                height: '10', width: '10',
-                videoId: 'x0-xFqvJ-U8', // ID da Música
-                playerVars: { 'autoplay': 0, 'controls': 0 }
+                videoId: 'x0-xFqvJ-U8', // ID da Música/Vídeo
+                playerVars: { 'autoplay': 0, 'controls': 0, 'disablekb': 1, 'showinfo': 0, 'rel': 0 }
             });
         }
 
         function toggleBgMusic() {
-            if (!ytApiReady || !bgPlayer || typeof bgPlayer.getPlayerState !== 'function') return;
+            if (!ytApiReady || !bgPlayer || typeof bgPlayer.isMuted !== 'function') return;
             
-            const state = bgPlayer.getPlayerState();
-            if (state === YT.PlayerState.PLAYING) {
-                bgPlayer.pauseVideo();
-                isMusicPlaying = false;
-            } else {
-                bgPlayer.playVideo();
+            // Alternar mute para não recarregar o vídeo visualmente
+            if (bgPlayer.isMuted()) {
+                bgPlayer.unMute();
+                bgPlayer.setVolume(100);
                 isMusicPlaying = true;
+            } else {
+                bgPlayer.mute();
+                isMusicPlaying = false;
             }
-            render(); // Atualiza o ícone do botão
+            render(); // Atualiza o texto do botão
         }
 
         // ==========================================
-        // DADOS E CONFIGURAÇÕES
+        // DADOS DOS SLIDES
         // ==========================================
         const emails = [
             "miguel-rmontana@estudante.rs.gov.br", 
@@ -300,7 +322,7 @@
         }
 
         // ==========================================
-        // TEXTO ANIMADO
+        // TEXTO ANIMADO EM LETRAS
         // ==========================================
         function createStudioText(text) {
             return text.split('').map((char) => {
@@ -331,55 +353,54 @@
             }
         }
 
-        // --- TELA INICIAL ---
+        // --- TELA INICIAL (TRANSPARENTE PARA MOSTRAR O VÍDEO NO FUNDO) ---
         function renderStartScreen() {
             return `
-                <div class="flex flex-col items-center justify-center w-full h-full bg-brand-darker relative overflow-hidden">
-                    <div class="absolute w-[800px] h-[800px] bg-brand-orange/10 rounded-full blur-[100px] pointer-events-none"></div>
+                <div class="flex flex-col items-center justify-center w-full h-full bg-transparent relative overflow-hidden">
+                    <div class="absolute w-[800px] h-[800px] bg-brand-orange/20 rounded-full blur-[120px] pointer-events-none"></div>
                     
-                    <h1 class="text-6xl md:text-8xl font-montserrat font-black mb-4 z-10 text-center tracking-tighter">BUDISMO<span class="text-brand-orange">.</span></h1>
-                    <p class="text-gray-400 mb-12 z-10 text-center max-w-lg text-lg">Selecione uma experiência visual.</p>
+                    <h1 class="text-6xl md:text-8xl font-montserrat font-black mb-4 z-10 text-center tracking-tighter drop-shadow-2xl">BUDISMO<span class="text-brand-orange">.</span></h1>
+                    <p class="text-gray-300 mb-12 z-10 text-center max-w-lg text-lg drop-shadow-md">Selecione uma experiência visual.</p>
                     
                     <div class="flex flex-col md:flex-row gap-6 z-10 mb-8">
                         <button onclick="playIntro('normal')" class="glass-card group relative px-8 py-5 rounded-xl transition-all duration-300 flex items-center gap-4 w-72">
                             <i class="fa-solid fa-play text-2xl group-hover:text-white text-brand-orange"></i>
                             <div class="text-left">
                                 <h3 class="font-bold text-lg">Apresentação</h3>
-                                <p class="text-xs text-gray-400 group-hover:text-gray-200">Tela cheia cinemática</p>
+                                <p class="text-xs text-gray-300 group-hover:text-white">Tela cheia cinemática</p>
                             </div>
                         </button>
                         <button onclick="setMode('os')" class="glass-card group relative px-8 py-5 rounded-xl transition-all duration-300 flex items-center gap-4 w-72">
                             <i class="fa-brands fa-windows text-2xl group-hover:text-white text-brand-orange"></i>
                             <div class="text-left">
                                 <h3 class="font-bold text-lg">Sistema OS</h3>
-                                <p class="text-xs text-gray-400 group-hover:text-gray-200">Simulador Interativo</p>
+                                <p class="text-xs text-gray-300 group-hover:text-white">Simulador Interativo</p>
                             </div>
                         </button>
                     </div>
 
-                    <!-- Toggle Música na Tela Inicial -->
-                    <button onclick="toggleBgMusic()" class="z-10 flex items-center gap-2 text-sm text-gray-400 hover:text-brand-orange transition-colors bg-white/5 px-4 py-2 rounded-full border border-white/10 hover:border-brand-orange/50">
+                    <button onclick="toggleBgMusic()" class="z-10 flex items-center gap-2 text-sm text-white hover:text-brand-orange transition-colors glass-card px-5 py-2.5 rounded-full border border-white/20 hover:border-brand-orange/50">
                         <i class="fa-solid ${isMusicPlaying ? 'fa-volume-high' : 'fa-volume-xmark'}"></i> 
-                        ${isMusicPlaying ? 'Pausar Música de Fundo' : 'Tocar Música de Fundo (Short)'}
+                        ${isMusicPlaying ? 'Pausar Som do Vídeo' : 'Tocar Som do Vídeo (Short)'}
                     </button>
                 </div>
             `;
         }
 
-        // --- TELA DE INTRODUÇÃO (ESTÚDIO) ---
+        // --- TELA DE INTRODUÇÃO (COM VÍDEO DO GOD OF WAR) ---
         function renderStudioIntro() {
             return `
-                <div class="w-full h-full bg-black flex flex-col items-center justify-center z-50 overflow-hidden relative">
-                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[200px] bg-brand-orange/20 blur-[80px] rounded-full"></div>
+                <div class="w-full h-full bg-transparent flex flex-col items-center justify-center z-50 overflow-hidden relative">
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-brand-orange/30 blur-[100px] rounded-full"></div>
                     
                     <div class="text-center z-10" id="intro-content-wrapper" style="opacity: 0; transition: opacity 0.5s;">
-                        <p class="text-brand-orange font-bold tracking-[0.4em] text-sm mb-8 studio-fade">DESENVOLVIDO POR</p>
+                        <p class="text-brand-orange font-bold tracking-[0.4em] text-sm md:text-base mb-8 studio-fade drop-shadow-md">DESENVOLVIDO POR</p>
                         
-                        <div class="font-montserrat text-xl md:text-3xl font-bold tracking-wider text-white mb-4 emails-line">
+                        <div class="font-montserrat text-xl md:text-4xl font-bold tracking-wider text-white mb-6 emails-line drop-shadow-lg">
                             ${createStudioText(emails[0])}
                         </div>
                         
-                        <div class="font-montserrat text-xl md:text-3xl font-bold tracking-wider text-white emails-line">
+                        <div class="font-montserrat text-xl md:text-4xl font-bold tracking-wider text-white emails-line drop-shadow-lg">
                             ${createStudioText(emails[1])}
                         </div>
                     </div>
@@ -390,17 +411,17 @@
         // --- SISTEMA OPERACIONAL ---
         function renderOSDesktop() {
             return `
-                <div class="w-full h-full os-bg relative flex flex-col font-inter">
+                <div class="w-full h-full os-bg relative flex flex-col font-inter z-20">
                     <div class="flex-1 p-4 flex flex-col gap-6 items-start">
-                        <div onclick="openOSBrowser()" class="flex flex-col items-center gap-1 cursor-pointer hover:bg-white/10 p-2 rounded w-20 text-center group">
-                            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center drop-shadow-md group-hover:scale-110 transition-transform">
-                                <i class="fa-brands fa-google text-blue-500 text-xl"></i>
+                        <div onclick="openOSBrowser()" class="flex flex-col items-center gap-1 cursor-pointer glass-card p-3 rounded-lg w-24 text-center group">
+                            <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center drop-shadow-xl group-hover:scale-110 transition-transform">
+                                <i class="fa-brands fa-google text-blue-500 text-2xl"></i>
                             </div>
-                            <span class="text-xs font-semibold drop-shadow-md mt-1 text-white">Browser</span>
+                            <span class="text-xs font-semibold drop-shadow-md mt-2 text-white">Browser</span>
                         </div>
                     </div>
                     
-                    <div class="h-12 bg-black/60 backdrop-blur-md border-t border-white/10 flex items-center px-4 justify-between z-40 text-white">
+                    <div class="h-12 bg-black/70 backdrop-blur-md border-t border-white/20 flex items-center px-4 justify-between z-40 text-white">
                         <i class="fa-brands fa-windows text-xl hover:text-brand-orange cursor-pointer"></i>
                         <span id="os-clock" class="text-sm font-medium">12:00</span>
                     </div>
@@ -408,9 +429,9 @@
                     <div id="browser-window" class="hidden absolute top-[5%] left-[5%] md:left-[10%] w-[90%] md:w-[80%] h-[85%] bg-white rounded-lg os-window flex-col overflow-hidden z-50 flex shadow-2xl border border-gray-400">
                         <div class="h-10 bg-gray-200 flex items-center px-4 justify-between border-b border-gray-300">
                             <div class="flex gap-2">
-                                <div onclick="closeOSBrowser()" class="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600"></div>
-                                <div class="w-3 h-3 rounded-full bg-yellow-500 cursor-pointer"></div>
-                                <div class="w-3 h-3 rounded-full bg-green-500 cursor-pointer"></div>
+                                <div onclick="closeOSBrowser()" class="w-3 h-3 rounded-full bg-red-500 cursor-pointer hover:bg-red-600 shadow-inner"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500 cursor-pointer shadow-inner"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500 cursor-pointer shadow-inner"></div>
                             </div>
                             <div class="flex-1 mx-4">
                                 <div class="bg-white rounded-md px-3 py-1 text-xs text-gray-600 flex items-center gap-2 border border-gray-300 shadow-inner max-w-lg mx-auto">
@@ -444,8 +465,8 @@
             slide.stats.forEach(stat => {
                 statsHTML += `
                     <div class="flex items-center gap-4 text-xs md:text-sm mb-3">
-                        <span class="w-24 text-gray-400 font-medium">${stat.label}</span>
-                        <div class="h-1 flex-1 bg-gray-800 rounded-full overflow-hidden max-w-[200px]">
+                        <span class="w-24 text-gray-300 font-medium">${stat.label}</span>
+                        <div class="h-1.5 flex-1 bg-gray-800/80 rounded-full overflow-hidden max-w-[200px] border border-gray-700/50">
                             <div class="h-full bg-gradient-to-r from-brand-orange to-brand-amber relative rounded-full" style="width: ${stat.value}%"></div>
                         </div>
                         <span class="text-brand-orange font-bold text-xs">${stat.value}%</span>
@@ -457,11 +478,11 @@
             slidesData.forEach((item, index) => {
                 const isChart = item.id === 7;
                 const imgSrc = isChart ? 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200' : item.image;
-                const activeStyle = index === activeSlideIndex ? 'border-brand-orange shadow-[0_0_15px_rgba(249,115,22,0.4)]' : 'border-transparent hover:border-gray-500';
+                const activeStyle = index === activeSlideIndex ? 'border-brand-orange shadow-[0_0_20px_rgba(249,115,22,0.5)] bg-white/10' : 'border-transparent hover:border-gray-400';
 
                 cardsHTML += `
                     <div onclick="changeSlide(${index})" class="glass-card rounded-2xl flex p-2 min-w-[260px] md:min-w-[300px] cursor-pointer transition-all duration-300 border-2 ${activeStyle}">
-                        <img src="${imgSrc}" class="w-16 h-20 md:h-24 object-cover rounded-xl shrink-0 opacity-90">
+                        <img src="${imgSrc}" class="w-16 h-20 md:h-24 object-cover rounded-xl shrink-0 opacity-100">
                         <div class="ml-4 flex flex-col justify-center flex-1">
                             <h4 class="font-bold text-sm uppercase text-white">${item.navTitle}</h4>
                             <span class="text-brand-orange text-[10px] font-bold tracking-widest mt-1">${item.navSub}</span>
@@ -471,21 +492,20 @@
             });
 
             return `
-                <div class="w-full h-full bg-brand-dark flex flex-col relative overflow-hidden z-10 text-white">
+                <div class="w-full h-full bg-transparent flex flex-col relative overflow-hidden z-10 text-white backdrop-blur-[2px]">
                     <canvas id="particles-canvas" class="absolute inset-0 pointer-events-none z-0"></canvas>
                     
                     <header class="flex justify-between items-center p-6 md:px-12 md:py-8 z-20">
-                        <div class="font-montserrat font-black text-xl tracking-widest cursor-pointer hover:text-brand-orange transition" onclick="setMode('start')">
+                        <div class="font-montserrat font-black text-xl tracking-widest cursor-pointer hover:text-brand-orange transition drop-shadow-md" onclick="setMode('start')">
                             DHARMA<span class="text-brand-orange">.</span>
                         </div>
                         
-                        <!-- Toggle de Música na Apresentação -->
                         <div class="flex items-center gap-6">
-                            <button onclick="toggleBgMusic()" class="hidden md:flex items-center gap-2 text-xs font-bold bg-brand-orange/10 hover:bg-brand-orange/30 transition-colors px-4 py-2 rounded-full border border-brand-orange/30 text-brand-orange">
+                            <button onclick="toggleBgMusic()" class="glass-card flex items-center gap-2 text-xs font-bold transition-colors px-4 py-2 rounded-full border border-white/20 text-brand-orange hover:bg-brand-orange/20">
                                 <i class="fa-solid ${isMusicPlaying ? 'fa-pause' : 'fa-play'}"></i> 
-                                ${isMusicPlaying ? 'PAUSAR SOM' : 'TOCAR SOM'}
+                                ${isMusicPlaying ? 'MUTAR FUNDO' : 'TOCAR FUNDO'}
                             </button>
-                            <div class="text-brand-orange text-xs font-bold bg-brand-orange/10 px-3 py-1 rounded border border-brand-orange/20">
+                            <div class="text-brand-orange text-xs font-bold glass-card px-3 py-1 rounded border border-brand-orange/30 hidden md:block">
                                 USE W A S D PARA NAVEGAR
                             </div>
                         </div>
@@ -494,26 +514,25 @@
                     <main class="flex-1 flex flex-col md:flex-row relative z-10 px-6 md:px-12 pb-[100px]">
                         <div class="flex-1 flex flex-col justify-center md:pr-12 relative z-20">
                             <div id="anim-text" class="slide-enter">
-                                <h1 class="font-montserrat font-black text-5xl md:text-6xl lg:text-7xl leading-[0.9] mb-4 tracking-tighter drop-shadow-lg">
-                                    ${slide.title.replace('.', '<span class="text-brand-orange drop-shadow-[0_0_10px_rgba(249,115,22,0.8)]">.</span>')}
+                                <h1 class="font-montserrat font-black text-5xl md:text-6xl lg:text-7xl leading-[0.9] mb-4 tracking-tighter drop-shadow-2xl">
+                                    ${slide.title.replace('.', '<span class="text-brand-orange drop-shadow-[0_0_15px_rgba(249,115,22,1)]">.</span>')}
                                 </h1>
-                                <h2 class="text-brand-orange font-bold tracking-[0.2em] uppercase text-xs md:text-sm mb-6 bg-brand-orange/10 inline-block px-3 py-1 rounded">
+                                <h2 class="text-brand-orange font-bold tracking-[0.2em] uppercase text-xs md:text-sm mb-6 glass-card inline-block px-4 py-1.5 rounded shadow-lg border border-brand-orange/20">
                                     ${slide.subtitle}
                                 </h2>
-                                <p class="text-gray-300 text-sm md:text-base leading-relaxed max-w-lg mb-8 font-light drop-shadow-md">
+                                <p class="text-gray-200 text-sm md:text-base leading-relaxed max-w-lg mb-8 font-light drop-shadow-lg bg-black/20 p-4 rounded-xl backdrop-blur-sm border border-white/5">
                                     ${slide.description}
                                 </p>
-                                <div class="w-full max-w-sm h-px bg-gradient-to-r from-brand-orange/50 to-transparent mb-6"></div>
+                                <div class="w-full max-w-sm h-px bg-gradient-to-r from-brand-orange/60 to-transparent mb-6"></div>
                                 <div class="stats-container">${statsHTML}</div>
                             </div>
                         </div>
 
                         <div class="flex-1 relative hidden md:flex items-center justify-center">
-                            <div class="glow-arc"></div>
                             <div id="anim-img" class="img-enter float-anim w-full h-[65vh] relative z-10 flex items-center justify-center">
                                 ${slide.id === 7 
-                                    ? `<div class="w-full max-w-md glass-card p-6 rounded-2xl border border-white/10 shadow-2xl"><canvas id="buddhismChart"></canvas></div>` 
-                                    : `<img src="${slide.image}" class="h-full w-auto object-cover object-center image-mask drop-shadow-[0_0_30px_rgba(249,115,22,0.15)] rounded-2xl">`
+                                    ? `<div class="w-full max-w-md glass-card p-6 rounded-2xl border border-white/20 shadow-2xl"><canvas id="buddhismChart"></canvas></div>` 
+                                    : `<img src="${slide.image}" class="h-full w-auto object-cover object-center image-mask drop-shadow-[0_20px_40px_rgba(249,115,22,0.3)] rounded-2xl">`
                                 }
                             </div>
                         </div>
@@ -530,7 +549,7 @@
         }
 
         // ==========================================
-        // LÓGICA DE INTRODUÇÃO SEGURA E SEM TRAVAMENTOS
+        // LÓGICA DE INTRODUÇÃO EPICA (GOD OF WAR)
         // ==========================================
 
         function setMode(mode) {
@@ -546,7 +565,6 @@
 
             let animationStarted = false;
 
-            // Função que coordena a animação da intro
             const triggerIntroAnimations = () => {
                 if (animationStarted) return;
                 animationStarted = true;
@@ -557,16 +575,21 @@
                 const fadeEl = document.querySelector('.studio-fade');
                 if (fadeEl) fadeEl.classList.add('fade-anim');
 
-                // Anima as letras em sequência simulando batidas de música
+                // Anima as letras a cairem simulando a batida da música
                 const letters = document.querySelectorAll('.studio-letter');
                 letters.forEach((letter, index) => {
                     setTimeout(() => {
                         letter.classList.add('drop-anim');
-                    }, 800 + (index * 40)); 
+                    }, 800 + (index * 50)); 
                 });
 
-                // Avança para o modo final após 5.5s (independente do YouTube)
+                // Transição final para a apresentação (5.5 segundos)
                 setTimeout(() => {
+                    const introContainer = document.getElementById('intro-video-container');
+                    if (introContainer) {
+                        introContainer.style.opacity = '0';
+                        setTimeout(() => introContainer.classList.add('hidden'), 1000);
+                    }
                     if (introPlayer && typeof introPlayer.pauseVideo === 'function') {
                         introPlayer.pauseVideo();
                     }
@@ -574,14 +597,30 @@
                 }, 5500);
             };
 
-            // Tenta tocar o vídeo do YouTube da intro
+            // Pausa a música de fundo ambiente (Short) temporariamente para o épico brilhar
+            if (bgPlayer && typeof bgPlayer.mute === 'function') {
+                 bgPlayer.mute();
+                 isMusicPlaying = false;
+            }
+
+            const introContainer = document.getElementById('intro-video-container');
+            
+            // Verifica se a API do YT está pronta para tocar o God of War
             if (ytApiReady && introPlayer && typeof introPlayer.playVideo === 'function') {
+                if (introContainer) {
+                    introContainer.classList.remove('hidden');
+                    void introContainer.offsetWidth; // Força re-render
+                    introContainer.style.opacity = '1';
+                }
                 introPlayer.seekTo(0);
+                introPlayer.unMute();
+                introPlayer.setVolume(100);
                 introPlayer.playVideo();
-                // Aciona animações sincronizadas com a música
+                
+                // Dispara a queda das letras após um breve momento de arranque de vídeo
                 setTimeout(triggerIntroAnimations, 500);
             } else {
-                // FALLBACK: Se o YT falhar/bloquear, roda a animação perfeitamente mesmo assim
+                // FALLBACK SEGURO: Se a internet falhar e não carregar o vídeo, a animação roda na mesma e nada encrava!
                 setTimeout(triggerIntroAnimations, 100);
             }
         }
@@ -600,7 +639,7 @@
             if (imgAnim) { imgAnim.classList.remove('img-enter'); void imgAnim.offsetWidth; imgAnim.classList.add('img-enter'); }
         }
 
-        // --- Controles da Barra ---
+        // --- Controles da Barra Inferior ---
         function showBottomBar() {
             const bar = document.getElementById('bottom-nav-bar');
             if (bar) bar.classList.remove('translate-y-[150%]');
@@ -621,7 +660,7 @@
             hideBottomBarAfterDelay();
         }
 
-        // --- Eventos de Teclado ---
+        // --- Eventos de Teclado (WASD / Setas) ---
         function attachPresentationEvents() {
             document.onkeydown = function(e) {
                 if (!currentMode.includes('normal') && !currentMode.includes('os-presentation')) return;
@@ -634,13 +673,13 @@
             };
         }
 
-        // --- OS MODO LOGIC ---
+        // --- LÓGICA DO MODO SISTEMA OPERACIONAL (OS) ---
         let clockInterval;
         function startClock() {
             clearInterval(clockInterval);
             const updateTime = () => {
                 const el = document.getElementById('os-clock');
-                if(el) el.innerText = new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                if(el) el.innerText = new Date().toLocaleTimeString('pt-PT', {hour: '2-digit', minute:'2-digit'});
             };
             updateTime();
             clockInterval = setInterval(updateTime, 60000);
@@ -676,13 +715,14 @@
                     setTimeout(() => {
                         const urlBar = document.getElementById('url-bar');
                         if(urlBar) urlBar.innerText = "dharma.app/apresentacao";
+                        // Aciona a Intro Épica a partir do Google falso!
                         playIntro('os-presentation');
                     }, 600);
                 }
             }, 50);
         }
 
-        // --- Chart.js ---
+        // --- Gráfico Chart.js ---
         function initChart() {
             const ctx = document.getElementById('buddhismChart');
             if (!ctx) return;
