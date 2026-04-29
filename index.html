@@ -84,6 +84,10 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(249,115,22,0.5); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(249,115,22,1); }
 
+        /* Esconder scrollbar para barra de navegação mais limpa */
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
         /* Animações da Apresentação */
         .slide-enter { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(40px); }
         .img-enter { animation: fadeLeft 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateX(60px); }
@@ -364,6 +368,7 @@
         // ==========================================
         let recognition;
         let isListening = false;
+        let cr7Unlocked = false; // Flag para destrancar o áudio do YouTube
         
         function initVoiceSystem() {
             if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -395,6 +400,18 @@
         }
 
         function toggleVoiceCommand() {
+            // Destrancar o áudio do YouTube no primeiro clique do utilizador
+            if (!cr7Unlocked && cr7AudioPlayer && typeof cr7AudioPlayer.playVideo === 'function') {
+                cr7AudioPlayer.mute();
+                cr7AudioPlayer.playVideo();
+                setTimeout(() => {
+                    cr7AudioPlayer.pauseVideo();
+                    cr7AudioPlayer.seekTo(0);
+                    cr7AudioPlayer.unMute();
+                }, 100);
+                cr7Unlocked = true;
+            }
+
             if (!recognition) {
                 initVoiceSystem();
                 if(!recognition) {
@@ -573,7 +590,7 @@
                     </div>
 
                     <!-- Janela do Browser -->
-                    <div id="browser-window" class="${isBrowserOpen ? '' : 'hidden'} absolute top-[5%] left-[5%] md:left-[10%] w-[90%] md:w-[80%] h-[85%] bg-white rounded-xl flex-col overflow-hidden z-50 flex shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-gray-600">
+                    <div id="browser-window" class="${isBrowserOpen ? '' : 'hidden'} absolute top-0 left-0 w-full h-[calc(100%-3.5rem)] bg-white rounded-none flex-col overflow-hidden z-50 flex shadow-2xl">
                         <!-- Top Bar do Browser -->
                         <div class="h-12 bg-gray-100 flex items-center px-4 justify-between border-b border-gray-300">
                             <div class="flex gap-2">
@@ -627,14 +644,22 @@
             slidesData.forEach((item, index) => {
                 const isChart = item.id === 7;
                 const imgSrc = isChart ? 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=200' : item.image;
-                const activeStyle = index === activeSlideIndex ? 'border-brand-orange shadow-[0_0_20px_rgba(249,115,22,0.8)] bg-white/20' : 'border-transparent hover:border-gray-300';
+                const isActive = index === activeSlideIndex;
+                const activeStyle = isActive 
+                    ? 'border-brand-orange shadow-[0_0_25px_rgba(249,115,22,0.6)] bg-white/10 scale-105 translate-y-[-8px]' 
+                    : 'border-transparent hover:border-white/30 hover:bg-white/5 hover:-translate-y-2 opacity-70 hover:opacity-100';
 
                 cardsHTML += `
-                    <div onclick="changeSlide(${index})" class="glass-card rounded-2xl flex p-2 min-w-[260px] md:min-w-[300px] cursor-pointer transition-all duration-300 border-2 ${activeStyle}">
-                        <img src="${imgSrc}" class="w-16 h-20 md:h-24 object-cover rounded-xl shrink-0">
-                        <div class="ml-4 flex flex-col justify-center flex-1">
-                            <h4 class="font-bold text-sm uppercase text-white drop-shadow-md">${item.navTitle}</h4>
-                            <span class="text-brand-orange text-[10px] font-bold tracking-widest mt-1">${item.navSub}</span>
+                    <div onclick="changeSlide(${index})" class="glass-card rounded-2xl flex p-3 min-w-[280px] md:min-w-[320px] cursor-pointer transition-all duration-500 border-2 ${activeStyle} relative overflow-hidden group mx-1">
+                        ${isActive ? '<div class="absolute inset-0 bg-gradient-to-r from-brand-orange/20 to-transparent pointer-events-none"></div>' : ''}
+                        <div class="relative">
+                            <img src="${imgSrc}" class="w-16 h-20 md:w-20 md:h-24 object-cover rounded-xl shrink-0 shadow-lg group-hover:shadow-brand-orange/50 transition-shadow duration-300">
+                            <div class="absolute -top-2 -left-2 bg-black/90 text-white text-[10px] font-black w-6 h-6 flex items-center justify-center rounded-full border border-brand-orange/50 shadow-lg">${index + 1}</div>
+                        </div>
+                        <div class="ml-4 flex flex-col justify-center flex-1 z-10">
+                            <h4 class="font-bold text-sm md:text-base uppercase text-white drop-shadow-md group-hover:text-brand-orange transition-colors">${item.navTitle}</h4>
+                            <span class="text-gray-300 text-[10px] md:text-xs font-semibold tracking-widest mt-1">${item.navSub}</span>
+                            ${isActive ? '<div class="w-full h-1 bg-black/50 rounded-full mt-3 overflow-hidden"><div class="h-full bg-brand-orange w-full animate-pulse"></div></div>' : ''}
                         </div>
                     </div>
                 `;
@@ -690,7 +715,7 @@
 
                     <div id="bottom-hover-trigger" onmouseenter="showBottomBar()" onmouseleave="hideBottomBarAfterDelay()"></div>
                     <div id="bottom-nav-bar" class="absolute bottom-6 md:bottom-8 left-0 w-full px-6 md:px-12 z-30 translate-y-[150%]">
-                        <div class="flex gap-4 md:gap-6 overflow-x-auto pb-4 custom-scrollbar items-end" onmouseenter="clearBottomBarTimeout()" onmouseleave="hideBottomBarAfterDelay()">
+                        <div class="flex gap-4 md:gap-6 overflow-x-auto pb-8 pt-4 px-2 hide-scroll items-end" onmouseenter="clearBottomBarTimeout()" onmouseleave="hideBottomBarAfterDelay()">
                             ${cardsHTML}
                         </div>
                     </div>
